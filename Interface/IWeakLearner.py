@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 
 class IWeakLearner:
-    def __init__(self, **kwargs):
+    def __init__(self):
         pass
 
     @abstractmethod
@@ -10,15 +10,11 @@ class IWeakLearner:
         pass
 
     @abstractmethod
-    def train(self, input):
+    def train(self, X):
         pass
 
     @abstractmethod
-    def validate(self, input):
-        pass
-
-    @abstractmethod
-    def test(self, input):
+    def predict(self, x):
         pass
 
     @abstractmethod

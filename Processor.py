@@ -24,7 +24,7 @@ class Processor:
             if new_data:
                 training_set.append(self.collect_next_dataset())
                 left_over = left_over - 1
-            else
+            else:
                 break
         return training_set
 
