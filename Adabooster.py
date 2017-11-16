@@ -39,3 +39,9 @@ class Adabooster:
 
     def predict_data(self, test_data):
         return sum(weight * learner(test_data) for (weight, learner) in zip(self.weights, self.weak_learners))
+
+    def save_model(self, path):
+        pickle_file = open(path, 'wb')
+        for learner in self.weak_learners:
+            learner.dump_to_pickle_file(pickle_file)
+        pickle_file.close()

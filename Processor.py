@@ -3,18 +3,24 @@ from Interface.IWeakLearner import IWeakLearner
 from Interface.IDataStream import IDataStream
 from Interface.IFeatureExtractor import IFeatureExtractor
 import numpy as np
+import pickle
+
 
 class Processor:
     def __init__(self, sliding_window_time_frame=30,
                  stddev_threshold=1,
                  risk_iterations=10,
-                 minimum_training_size=1000):
+                 minimum_training_size=1000,
+                 save_trained_model=True,
+                 save_path='model'):
         self.strong_learner = None
         self.data_processors = []
         self.sliding_window_time_frame = sliding_window_time_frame
         self.stddev_threshold = stddev_threshold
         self.risk_iterations = risk_iterations
         self.minimum_training_size = minimum_training_size
+        self.save_trained_model = save_trained_model
+        self.save_path = save_path
 
     def collect_training_dataset(self):
         training_set = []
@@ -33,13 +39,17 @@ class Processor:
         dataset = []
         for stream in self.data_processors:
             # Get Raw Data
-            raw_data = stream['Stream'].get_next_stamped_data()
+            data = None
+            if stream['Stream']:
+                data = stream['Stream'].get_next_stamped_data()
             # Sanitize Data if sanitizer exists
             if stream['Sanitizer']:
-                raw_data = stream['Sanitizer'].sanitize_data(raw_data)
+                data = stream['Sanitizer'].sanitize_data(data)
             # Extract Features
-            features = stream['Extractor'].extract_features(raw_data)
-            dataset.append(features)
+            if stream['Extractor']:
+                data = stream['Extractor'].extract_features(data)
+            if data:
+                dataset.append(data)
         return dataset
 
     def run_training_process(self):
@@ -47,6 +57,8 @@ class Processor:
         self.strong_learner = Adabooster(training_set=training_datasets)
         for processor in self.data_processors:
             self.strong_learner.set_weak_learner(processor['Learner'])
+        if self.save_trained_model:
+            self.strong_learner.save_model(self.save_path)
 
     def start_process(self):
         self.run_training_process()
@@ -71,7 +83,7 @@ class Processor:
             if risk_count >= self.risk_iterations:
                 print("WE HAVE AN ISSUE HERE")
 
-    def add_weak_learner(self, learner, extractor, data_stream, sanitizer=None):
+    def add_weak_learner(self, learner=None, extractor=None, data_stream=None, sanitizer=None):
         if isinstance(learner, IWeakLearner) and isinstance(data_stream, IDataStream) and isinstance(extractor, IFeatureExtractor):
             self.data_processors.append({'Learner': learner, 'Extractor': extractor, 'Stream': data_stream, 'Sanitizer': sanitizer})
             if self.strong_learner:

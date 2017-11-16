@@ -8,6 +8,7 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+import pickle
 
 
 class AutoEncoderNNWeakLearner(IWeakLearner):
@@ -39,12 +40,12 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
                                        verbose=0,
                                        save_best_only=True)
         self.autoencoder.fit(X_train, X_train,
-                                  epochs=self.epochs,
-                                  batch_size=self.batch_size,
-                                  shuffle=True,
-                                  validation_data=(X_test, X_test),
-                                  verbose=1,
-                                  callbacks=[checkpointer])
+                             epochs=self.epochs,
+                             batch_size=self.batch_size,
+                             shuffle=True,
+                             validation_data=(X_test, X_test),
+                             verbose=1,
+                             callbacks=[checkpointer])
 
         # Test
         predictions = self.autoencoder.predict(X_test)
@@ -62,3 +63,6 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
 
     def load_model(self, path):
         self.autoencoder = load_model(path)
+
+    def dump_to_pickle_file(self, file):
+        pickle.dump(self.autoencoder, file)
