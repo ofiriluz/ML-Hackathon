@@ -23,19 +23,19 @@ class Adabooster:
             else:
                 w[i] = self.weights[i] * np.exp(-alpha)
         self.weights = w / w.sum()
-        self.weak_learners.append(weak_learner)
         self.weak_alphas.append(alpha)
 
     def set_weak_learner(self, weak_learner):
         results = np.array(weak_learner.train(t) for t in self.training_set)
         errors = self.__evaluate_errors(results=results)
         self.__update_weights(errors=errors)
+        self.weak_learners.append(weak_learner)
 
-    def evaluate_strong_learner(self):
+    def evaluate_model(self):
         weak_learners_len = len(self.weak_learners)
         for x in self.training_set:
             hx = [self.weak_alphas[i]*self.weak_learners[i](x) for i in range(weak_learners_len)]
             # TODO - Decide on evaluation function
 
-    def test_strong_learner(self, test_data):
+    def predict_data(self, test_data):
         return sum(weight * learner(test_data) for (weight, learner) in zip(self.weights, self.weak_learners))
