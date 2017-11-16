@@ -1,10 +1,10 @@
 from abc import abstractmethod
 
 
-class IFeatureExtractor:
+class ISanitizer:
     def __init__(self):
         pass
 
     @abstractmethod
-    def extract_features(self, data_vector):
+    def sanitize_data(self, data):
         pass
