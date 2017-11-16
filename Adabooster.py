@@ -18,10 +18,11 @@ class Adabooster:
         alpha = 0.5 * np.log((1-e)/e)
         w = np.zeros(self.training_size)
         for i in range(self.training_size):
-            if errors[i] == 1:
-                w[i] = self.weights[i] * np.exp(alpha)
-            else:
-                w[i] = self.weights[i] * np.exp(-alpha)
+            pass
+            # if errors[i] == 1:
+            #     w[i] = self.weights[i] * np.exp(alpha)
+            # else:
+            #     w[i] = self.weights[i] * np.exp(-alpha)
         self.weights = w / w.sum()
         self.weak_alphas.append(alpha)
 
@@ -38,7 +39,7 @@ class Adabooster:
             # TODO - Decide on evaluation function
 
     def predict_data(self, test_data):
-        return sum(weight * learner(test_data) for (weight, learner) in zip(self.weights, self.weak_learners))
+        return sum(weight * learner(test_data) for (weight, learner) in zip(self.weak_alphas, self.weak_learners))
 
     def save_model(self, path):
         pickle_file = open(path, 'wb')

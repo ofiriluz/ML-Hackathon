@@ -3,7 +3,6 @@ from Interface.IWeakLearner import IWeakLearner
 from Interface.IDataStream import IDataStream
 from Interface.IFeatureExtractor import IFeatureExtractor
 import numpy as np
-import pickle
 
 
 class Processor:
@@ -43,7 +42,7 @@ class Processor:
                 current_data_set.append(stream['Stream'].get_next_stamped_data())
             # Sanitize Data if sanitizer exists
             if stream['Sanitizer']:
-                data = stream['Sanitizer'].sanitize_data(current_data_set)
+                current_data_set = stream['Sanitizer'].sanitize_data(current_data_set)
             features = stream['Extractor'].extract_features(current_data_set)
             dataset.append(features)
         return dataset

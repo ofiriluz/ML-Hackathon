@@ -17,7 +17,7 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         self.cols_shape = cols_shape
         self.encoding_dim = cols_shape / 2
         self.autoencoder = None
-        +self.epochs = training_epochs
+        self.epochs = training_epochs
         self.batch_size = batch_size
         self.validation_size = validation_size
 
