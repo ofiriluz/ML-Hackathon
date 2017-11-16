@@ -38,18 +38,14 @@ class Processor:
         # Build a dataset from all the weak learners data streams
         dataset = []
         for stream in self.data_processors:
-            # Get Raw Data
-            data = None
-            if stream['Stream']:
-                data = stream['Stream'].get_next_stamped_data()
+            current_data_set = []
+            while not stream['Extractor'].can_be_extracted(current_data_set):
+                current_data_set.append(stream['Stream'].get_next_stamped_data())
             # Sanitize Data if sanitizer exists
             if stream['Sanitizer']:
-                data = stream['Sanitizer'].sanitize_data(data)
-            # Extract Features
-            if stream['Extractor']:
-                data = stream['Extractor'].extract_features(data)
-            if data:
-                dataset.append(data)
+                data = stream['Sanitizer'].sanitize_data(current_data_set)
+            features = stream['Extractor'].extract_features(current_data_set)
+            dataset.append(features)
         return dataset
 
     def run_training_process(self):

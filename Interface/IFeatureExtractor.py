@@ -8,3 +8,7 @@ class IFeatureExtractor:
     @abstractmethod
     def extract_features(self, data_vector):
         pass
+
+    @abstractmethod
+    def can_be_extracted(self, data):
+        pass
