@@ -44,7 +44,7 @@ class MouseHook:
                 print((x,y, millis))
                 # Save to CSV file
                 #csvFile.write(outputLine)
-                if (self.mouseCoordsList.count() >= self.SlidingWindowSize):
+                if len(self.mouseCoordsList) >= self.SlidingWindowSize:
                     self.mouseCoordsList.pop(0)
                 self.mouseCoordsList.append((x, y, millis))
             self.lastMillis = millis
