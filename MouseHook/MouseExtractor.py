@@ -100,27 +100,12 @@ class MouseExtractor(IFeatureExtractor):
             self.angle_vec_per_seconds.append(self.calculate_avg_angle_per_second(curr_second_angles))
 
         self.build_importance_matrix(total_moves)
-        # Temp: print matrices:
-        print("\n\nAreas Hits:\n")
-        self.print_matrix(self.areas_hits_matrix, self.areas_matrix_rows, self.areas_matrix_cols)
-        print("\n\nAreas Importance:\n")
-        self.print_matrix(self.areas_importance_matrix, self.areas_matrix_rows, self.areas_matrix_cols)
         areas_importance_list =  self.matrix_to_array(self.areas_importance_matrix)
         final_list = areas_importance_list
         final_list.extend(self.distance_vec_per_seconds)
         final_list.extend(self.angle_vec_per_seconds)
-        print("Distances list:\n")
-        print(self.distance_vec_per_seconds)
-        print("Angles list:\n")
-        print(self.angle_vec_per_seconds)
-        print("Importance list:\n")
-        print(areas_importance_list)
-        print("Final List:\n")
-        print(final_list)
         # Clear for next extract iteration before returning
         self.clear_state()
-        print("Final List:\n")
-        print(final_list)
         return StampedFeatures(stamp=Stamp('MouseHook', user=ctypes.windll.user32),
                                data=np.array(final_list))
                                # columns=['AreaImportance-' +
@@ -130,7 +115,6 @@ class MouseExtractor(IFeatureExtractor):
     def update_area_hit_count(self, x, y):
         area_x = int(math.floor((y * self.areas_matrix_rows) / self.screen_height))
         area_y = int(math.floor((x * self.areas_matrix_cols)/ self.screen_width))
-        #print(str.format("Coordinate ({0},{1}) hit area: [{2},{3}]", x, y, area_x, area_y))
         self.areas_hits_matrix[area_x][area_y] += 1
 
     def build_importance_matrix(self, total_moves):
@@ -138,23 +122,15 @@ class MouseExtractor(IFeatureExtractor):
             for j in range(self.areas_matrix_cols):
                 self.areas_importance_matrix[i][j] = round(self.areas_hits_matrix[i][j] / total_moves, 3)
 
-    def print_matrix(self, matrix, rows, cols):
-        for i in range(rows):
-            for j in range(cols):
-                print(str.format("{0} |", matrix[i][j]), end='')
-            print("\n")
-
     def add_distance_measurement(self, x1, y1, x2, y2, buf):
         distance = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
         buf.append(round(distance,3))
-        #print(str.format("distance : {0}",round(distance,3)))
 
     def add_angle_measurement(self, x1, y1, x2, y2, buf):
         angle = math.atan2(x1 - x2, y1 - y2) * (180 / math.pi) + 180
         if angle == 360:
             angle = 0
         buf.append(round(angle,3))
-        print(str.format("angle : {0}", round(angle,3)))
 
     def calculate_avg_angle_per_second(self, angle_buf):
         num_of_angles = len(angle_buf)

@@ -48,7 +48,6 @@ class MouseHook:
             millis = int(round(currSecond * 1000))
             if millis - self.lastMillis >= 10:
                 (x, y) = win32gui.GetCursorPos()
-                #print((x, y, millis))
                 self.recordMousePosition(x, y, millis)
                 self.lastMillis = millis
 
