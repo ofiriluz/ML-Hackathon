@@ -31,6 +31,9 @@ class GUIFlow:
         if self.current_processor:
             self.current_processor.stop_process()
             self.current_processor = None
+        self.processes = []
+        self.__init_models()
+        self.intruder_label.pack_forget()
 
     def __init_models(self):
         for file in os.listdir(self.models_folder):

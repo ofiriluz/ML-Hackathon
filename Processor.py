@@ -113,21 +113,15 @@ class Processor:
             if not data:
                 break
             (mse, pred) = self.strong_learner.predict_data(np.asmatrix(data.get_features()))
-            print("PRED MSE = " + str(mse))
+            # print("PRED MSE = " + str(mse))
             prediction_times.append(data.get_header().get_time())
             # Evaluate a sliding window
             prediction_mse_window.append(mse[0, 0])
             if len(prediction_mse_window) == self.sliding_window_frame_size:
                 prediction_mse_window.pop(0)
-            # while len(prediction_mse_window) > 1:
-                # time_slice = data.get_header().get_time() - prediction_times[0]
-                # if time_slice > self.sliding_window_time_frame:
-                #     prediction_mse_window.pop(0)
-                # else:
-                #     break
             prediction_mse_window = self.remove_outliers(prediction_mse_window, 1.5)
             sliding_window_stdv = np.std(prediction_mse_window)
-            print(str(sliding_window_stdv))
+            # print(str(sliding_window_stdv))
             if len(prediction_mse_window) >= self.starting_eval_size and sliding_window_stdv > self.stddev_threshold:
                 risk_count = risk_count + 1
             else:
@@ -164,7 +158,6 @@ class Processor:
     def load_processor(self, path, learners):
         with open(path, 'r') as f:
             processor_state = json.load(f)
-            print(processor_state)
             self.sliding_window_time_frame = processor_state['sliding_window_time_frame']
             self.stddev_threshold = processor_state['stddev_threshold']
             self.risk_iterations = processor_state['risk_iterations']
