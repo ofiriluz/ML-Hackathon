@@ -23,5 +23,9 @@ class KeyboardDataStream(IDataStream):
         self.listener = keyboard.Listener(on_press=self.__on_key_press)
         Thread(target=self.__listener_thread())
 
+    def stop_stream(self):
+        if self.listener:
+            self.listener.stop()
+
     def get_next_stamped_data(self):
         return self.records_window.pop(0)

@@ -20,6 +20,11 @@ class DataReaderStream(IDataStream):
     def init_stream(self):
         self.__open_next_file()
 
+    def stop_stream(self):
+        self.files = []
+        self.current_file = None
+        self.current_lines = []
+
     def get_next_stamped_data(self):
         if len(self.current_lines) == 0:
             self.__open_next_file()

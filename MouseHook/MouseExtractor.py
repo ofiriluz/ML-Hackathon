@@ -7,7 +7,7 @@ import numpy as np
 
 
 class MouseExtractor(IFeatureExtractor):
-    def __init__(self, data_chunk_duration_sec = 30):
+    def __init__(self, data_chunk_duration_sec=10):
         super().__init__()
         self.data_chunk_duration_sec = data_chunk_duration_sec
 
@@ -23,7 +23,7 @@ class MouseExtractor(IFeatureExtractor):
     def can_be_extracted(self, data):
         first_timestamp = data[0][2]
         last_timestamp = data[-1][2]
-        return last_timestamp - first_timestamp >= self.data_chunk_duration_sec*1000
+        return (last_timestamp - first_timestamp) >= self.data_chunk_duration_sec*1000
 
     def extract_features(self, data_vector):
         self.areas_hits_matrix = np.zeros(shape=(self.areas_matrix_rows, self.areas_matrix_cols))
@@ -64,7 +64,7 @@ class MouseExtractor(IFeatureExtractor):
     def matrix_to_array(self, matrix):
         lst = []
         for row in matrix:
-            lst += row
+            lst.extend(row)
         return lst
 
     def reset_state(self):

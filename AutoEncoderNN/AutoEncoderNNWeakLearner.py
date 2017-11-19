@@ -13,7 +13,7 @@ import pickle
 
 
 class AutoEncoderNNWeakLearner(IWeakLearner):
-    def __init__(self, cols_shape=10, training_epochs=100, batch_size=8, validation_size=0.2):
+    def __init__(self, cols_shape=10, training_epochs=100, batch_size=16, validation_size=0.2):
         super().__init__()
         self.cols_shape = cols_shape
         self.encoding_dim = int(cols_shape / 2)
@@ -25,9 +25,11 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
     def init_weak_learner(self):
         input_layer = Input(shape=(self.cols_shape,))
 
-        encoder = Dense(self.encoding_dim, activation='relu')(input_layer)
+        encoder = Dense(self.encoding_dim, activation='relu', activity_regularizer=regularizers.l1(10e-5))(input_layer)
         encoder = Dense(int(self.encoding_dim / 2), activation='relu')(encoder)
+        # encoder = Dense(int(self.encoding_dim / 4), activation='relu')(encoder)
 
+        # decoder = Dense(int(self.encoding_dim / 2), activation='relu')(encoder)
         decoder = Dense(self.encoding_dim, activation='relu')(encoder)
         decoder = Dense(self.cols_shape, activation='sigmoid')(decoder)
 
@@ -40,7 +42,7 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         # decoder = Dense(self.cols_shape, activation='relu')(decoder)
 
         self.autoencoder = Model(inputs=input_layer, outputs=decoder)
-        self.autoencoder.compile(optimizer='sgd', loss='mean_absolute_error', metrics=['mae','accuracy'])
+        self.autoencoder.compile(optimizer='sgd', loss='mean_absolute_error', metrics=['mae', 'accuracy'])
 
     def train(self, X):
         print("X = " +str(X))
@@ -60,6 +62,7 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
                              callbacks=[checkpointer])
 
         # Test
+        print("XTEST=" + str(X_test))
         predictions = self.autoencoder.predict(X_test)
         print(predictions)
         mse = np.mean(np.power(X_test - predictions, 2), axis=1)
@@ -68,7 +71,10 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         return (mse, predictions)
 
     def predict(self, x):
-        return self.autoencoder.predict(x)
+        print(x)
+        pred = self.autoencoder.predict(x)
+        mse = np.mean(np.power(x - pred, 2), axis=1)
+        return (mse, pred)
 
     def reset(self):
         self.init_weak_learner()
@@ -78,6 +84,3 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
 
     def load_model(self, path):
         self.autoencoder = load_model(path)
-
-    def dump_to_pickle_file(self, file):
-        pickle.dump(self.autoencoder, file)

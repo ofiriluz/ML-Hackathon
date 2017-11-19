@@ -9,9 +9,11 @@ from AutoEncoderNN.AutoEncoderNNWeakLearner import AutoEncoderNNWeakLearner
 import numpy as np
 import random
 
+
 def pos_generator(mu, stddev):
     x = np.random.normal(mu, stddev)
     return x if x >= 0 else pos_generator(mu, stddev)
+
 
 def generate_random_features():
     with open('C:/Users/ofiri/Desktop/Tests/features.txt') as f:
@@ -26,13 +28,58 @@ def generate_random_features():
             for line in generated_features:
                 f2.write(','.join([str(item) for item in line]) + '\n')
 
+
+def generate_features(stream, extractor):
+    data_set = []
+    next_data = stream.get_next_stamped_data()
+    if not next_data:
+        return None
+    data_set.append(next_data)
+    while not extractor.can_be_extracted(data_set):
+        next_data = stream.get_next_stamped_data()
+        if not next_data:
+            continue
+        data_set.append(next_data)
+    return extractor.extract_features(data_set)
+
+
+def generate_mouse_features():
+    stream = MouseStream()
+    extractor = MouseExtractor(data_chunk_duration_sec=5)
+    stream.init_stream()
+    features = None
+    count = 30
+    f = open('C:/Users/ofiri/Desktop/Tests/mouse_features.txt', 'w')
+    for c in range(count):
+        while not features:
+            features = generate_features(stream, extractor)
+        f.write(','.join(features) + '\n')
+    f.close()
+    stream.stop_stream()
+
+
+def generate_keyboard_features():
+    stream = KeyboardDataStream()
+    extractor = KeyboardExtractor(data_chunk_duration_sec=5)
+    stream.init_stream()
+    features = None
+    count = 30
+    f = open('C:/Users/ofiri/Desktop/Tests/keyboard_features.txt', 'w')
+    for c in range(count):
+        while not features:
+            features = generate_features(stream, extractor)
+        f.write(','.join(features) + '\n')
+    f.close()
+    stream.stop_stream()
+
+
 if __name__ == '__main__':
     processor = Processor(sliding_window_time_frame=30,
                           stddev_threshold=1,
                           risk_iterations=5,
                           minimum_training_size=900,
                           save_trained_model=True,
-                          save_path='./adaboosted_model.pkl')
+                          save_path='./')
 
     # Add the weak learners
     # processor.add_weak_learner(learner=AutoEncoderNNWeakLearner(cols_shape=6),
@@ -49,4 +96,6 @@ if __name__ == '__main__':
 
     # Run the processor
     processor.start_process()
+
+    # generate_mouse_features()
 

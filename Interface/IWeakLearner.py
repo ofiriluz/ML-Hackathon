@@ -28,7 +28,3 @@ class IWeakLearner:
     @abstractmethod
     def load_model(self, path):
         pass
-
-    @abstractmethod
-    def dump_to_pickle_file(self, file):
-        pass

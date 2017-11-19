@@ -6,6 +6,7 @@ import math
 import threading
 from pynput.mouse import Listener
 
+
 class MouseHook:
     def __init__(self,
                  sliding_window_size=5000,
@@ -16,11 +17,12 @@ class MouseHook:
         self.SampleIntervalMs = sample_interval_ms
 
         # Init internally
-        self.listenerThread = threading.Thread(target=self.Listen)
+        self.listenerThread = threading.Thread(target=self.listen)
         self.totalMoves = 0
         self.mouseCoordsList = []
         self.lastMeasuredSecond = int(round(time.time())) # Measure current time in seconds
         self.lastMillis = 0
+        self.listener = None
 
         # Get screen dimensions for division to areas
         user32 = ctypes.windll.user32
@@ -29,7 +31,9 @@ class MouseHook:
 
         #csvFile = open("Output\mousemove_" + str(datetime.datetime.now().timestamp()) + ".csv", "w+")
 
-    def GetData(self):
+    def get_data(self):
+        if len(self.mouseCoordsList) == 0:
+            return None
         return self.mouseCoordsList.pop(0)
 
     # CSV format: x,y,timestamp
@@ -40,7 +44,7 @@ class MouseHook:
         if millis - self.lastMillis >= self.SampleIntervalMs:
             #now = datetime.datetime.now()
             #outputLine = str.format('{0},{1},{2}', x, y, int(round(now.timestamp()))) + "\n"
-            if self.IsInScreenBounds(x, y):
+            if self.is_in_screen_bounds(x, y):
                 print((x,y, millis))
                 # Save to CSV file
                 #csvFile.write(outputLine)
@@ -49,16 +53,17 @@ class MouseHook:
                 self.mouseCoordsList.append((x, y, millis))
             self.lastMillis = millis
 
-    def IsInScreenBounds(self, x, y):
-        return (x >= 0 and y >= 0 and x < self.screenWidth and y < self.screenHeight)
+    def is_in_screen_bounds(self, x, y):
+        return 0 <= x < self.screenWidth and 0 <= y < self.screenHeight
 
-    def Listen(self):
-        # Collect events until released
-        with Listener(
-                on_move=self.on_move,
-                on_click=self.on_click,
-                on_scroll=self.on_scroll) as listener:
-            listener.join()
+    def listen(self):
+        self.listener = Listener(on_move=self.on_move)
+        self.listener.start()
+        self.listener.join()
 
-    def RunMouseHook(self):
+    def run_mouse_hook(self):
         self.listenerThread.start()
+
+    def stop_mouse_hook(self):
+        if self.listener:
+            self.listener.stop()

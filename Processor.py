@@ -13,7 +13,7 @@ class Processor:
                  risk_iterations=10,
                  minimum_training_size=1000,
                  save_trained_model=True,
-                 save_path='model'):
+                 save_path='./'):
         self.strong_learner = None
         self.data_processors = []
         self.sliding_window_time_frame = sliding_window_time_frame
@@ -29,12 +29,10 @@ class Processor:
         while left_over > 0:
             new_data = self.collect_next_dataset()
             if new_data:
-                training_set.append(self.collect_next_dataset())
+                training_set.append(new_data)
                 left_over = left_over - 1
             else:
                 break
-        print("FINAL SET = ")
-        print(training_set)
         return training_set
 
     def unite_features(self, dataset):
@@ -46,8 +44,7 @@ class Processor:
             collective_columns.extend(item.get_columns())
             collective_stamp.set_source(collective_stamp.get_source() + "_" + item.get_header().get_source())
             collective_stamp.set_time(min(collective_stamp.get_time(), item.get_header().get_time()))
-        print("COLLECTIVE = " + str(collective_features))
-        return StampedFeatures(stamp=collective_stamp, data=collective_features, columns=collective_columns)
+        return StampedFeatures(stamp=collective_stamp, data=np.array(collective_features), columns=collective_columns)
 
     def collect_next_dataset(self):
         # Build a dataset from all the weak learners data streams
@@ -88,11 +85,14 @@ class Processor:
         risk_count = 0
         while True:
             data = self.collect_next_dataset()
-            pred = self.strong_learner.predict_data(data.get_features())
+            if not data:
+                break
+            pred = self.strong_learner.predict_data(np.asmatrix(data.get_features()))
+            print('Prediction = ' + str(pred))
             # Evaluate a sliding window
             prediction_window.append(pred)
             while len(prediction_window) > 1:
-                time_slice = data.get_header().get_timestamp() - prediction_window[0]
+                time_slice = data.get_header().get_time() - prediction_window[0]
                 if time_slice > self.sliding_window_time_frame:
                     prediction_window.pop(0)
                 else:

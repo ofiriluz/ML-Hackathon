@@ -12,8 +12,11 @@ class MouseStream(IDataStream):
         self.mouse_hook = MouseHook(sliding_window_size, sample_interval_ms)
 
     def init_stream(self):
-        self.mouse_hook.RunMouseHook()
+        self.mouse_hook.run_mouse_hook()
+
+    def stop_stream(self):
+        self.mouse_hook.stop_mouse_hook()
 
     def get_next_stamped_data(self):
-        return self.mouse_hook.GetData()
+        return self.mouse_hook.get_data()
 
