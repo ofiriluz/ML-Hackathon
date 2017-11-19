@@ -150,9 +150,11 @@ class MouseExtractor(IFeatureExtractor):
         #print(str.format("distance : {0}",round(distance,3)))
 
     def add_angle_measurement(self, x1, y1, x2, y2, buf):
-        angle = math.atan2(x1 - x2, y1 - y2) * (180 / math.pi)
+        angle = math.atan2(x1 - x2, y1 - y2) * (180 / math.pi) + 180
+        if angle == 360:
+            angle = 0
         buf.append(round(angle,3))
-        #print(str.format("angle : {0}", round(angle,3)))
+        print(str.format("angle : {0}", round(angle,3)))
 
     def calculate_avg_angle_per_second(self, angle_buf):
         num_of_angles = len(angle_buf)
