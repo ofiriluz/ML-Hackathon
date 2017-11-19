@@ -8,12 +8,15 @@ class DataReaderStream(IDataStream):
         self.data_folder = data_folder
         self.current_file = None
         self.current_lines = []
-        self.files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f))]
+        self.files = []
+        if os.path.exists(data_folder):
+            self.files = [f for f in os.listdir(data_folder) if os.path.isfile(os.path.join(data_folder, f))]
 
     def __open_next_file(self):
         self.current_file = None
         self.current_line = []
         if len(self.files) > 0:
+            print("Switching to file = " + str(self.files[0]))
             self.current_file = open(self.data_folder + "/" + self.files.pop(0), 'r')
             self.current_lines = self.current_file.readlines()
 

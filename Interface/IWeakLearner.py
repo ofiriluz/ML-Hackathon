@@ -26,5 +26,5 @@ class IWeakLearner:
         pass
 
     @abstractmethod
-    def load_model(self, path):
+    def load_model(self, path, metadata):
         pass

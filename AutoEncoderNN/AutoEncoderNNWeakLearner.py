@@ -9,7 +9,8 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import normalize
-import pickle
+import json
+import base64
 
 
 class AutoEncoderNNWeakLearner(IWeakLearner):
@@ -21,6 +22,7 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         self.epochs = training_epochs
         self.batch_size = batch_size
         self.validation_size = validation_size
+        self.norms = None
 
     def init_weak_learner(self):
         input_layer = Input(shape=(self.cols_shape,))
@@ -45,33 +47,25 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         self.autoencoder.compile(optimizer='sgd', loss='mean_absolute_error', metrics=['mae', 'accuracy'])
 
     def train(self, X):
-        print("X = " +str(X))
         # normalize X
-        X = normalize(X, axis=0, norm='max')
+        X, self.norms = normalize(X, axis=0, norm='max', return_norm=True)
         X_train, X_test = train_test_split(X, test_size=self.validation_size, random_state=42)
-        checkpointer = ModelCheckpoint(filepath="./user_model",
-                                       verbose=0,
-                                       save_best_only=True)
-        print(X_train)
         self.autoencoder.fit(X_train, X_train,
                              epochs=self.epochs,
                              batch_size=self.batch_size,
                              shuffle=True,
                              validation_data=(X_test, X_test),
-                             verbose=0,
-                             callbacks=[checkpointer])
+                             verbose=0)
 
         # Test
-        print("XTEST=" + str(X_test))
         predictions = self.autoencoder.predict(X_test)
-        print(predictions)
+        print("Predicitions = " + str(predictions))
         mse = np.mean(np.power(X_test - predictions, 2), axis=1)
         print("MSE = " + str(mse))
-        print(len(mse))
         return (mse, predictions)
 
     def predict(self, x):
-        print(x)
+        x /= self.norms[np.newaxis, :]
         pred = self.autoencoder.predict(x)
         mse = np.mean(np.power(x - pred, 2), axis=1)
         return (mse, pred)
@@ -81,6 +75,18 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
 
     def save_model(self, path):
         save_model(self.autoencoder, path)
+        print(self.norms)
+        return {'cols_shape': self.cols_shape, 'encoding_dim': self.encoding_dim,
+                'epochs': self.epochs, 'validation_size': self.validation_size,
+                'batch_size': self.batch_size,
+                'norms': json.dumps(self.norms.tolist())}
 
-    def load_model(self, path):
+    def load_model(self, path, metadata):
         self.autoencoder = load_model(path)
+        self.autoencoder._make_predict_function()
+        self.cols_shape = metadata['cols_shape']
+        self.encoding_dim = metadata['encoding_dim']
+        self.validation_size = metadata['validation_size']
+        self.batch_size = metadata['batch_size']
+        self.epochs = metadata['epochs']
+        self.norms = np.array(json.loads(metadata['norms']))
