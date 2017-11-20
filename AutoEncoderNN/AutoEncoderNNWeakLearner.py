@@ -47,7 +47,6 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
         self.autoencoder.compile(optimizer='sgd', loss='mean_absolute_error', metrics=['mae', 'accuracy'])
 
     def train(self, X):
-        # normalize X
         X, self.norms = normalize(X, axis=0, norm='max', return_norm=True)
         X_train, X_test = train_test_split(X, test_size=self.validation_size, random_state=42)
         self.autoencoder.fit(X_train, X_train,
@@ -59,14 +58,12 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
 
         # Test
         predictions = self.autoencoder.predict(X_test)
-        print("Predicitions = " + str(predictions))
         mse = np.mean(np.power(X_test - predictions, 2), axis=1)
-        print("MSE = " + str(mse))
         return (mse, predictions)
 
     def predict(self, x):
-        x /= self.norms[np.newaxis, :]
-        pred = self.autoencoder.predict(x)
+        x /= self.norms
+        pred = self.autoencoder.predict(np.asmatrix(x))
         mse = np.mean(np.power(x - pred, 2), axis=1)
         return (mse, pred)
 
@@ -75,7 +72,6 @@ class AutoEncoderNNWeakLearner(IWeakLearner):
 
     def save_model(self, path):
         save_model(self.autoencoder, path)
-        print(self.norms)
         return {'cols_shape': self.cols_shape, 'encoding_dim': self.encoding_dim,
                 'epochs': self.epochs, 'validation_size': self.validation_size,
                 'batch_size': self.batch_size,

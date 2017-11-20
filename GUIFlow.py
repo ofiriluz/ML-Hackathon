@@ -39,7 +39,7 @@ class GUIFlow:
         for file in os.listdir(self.models_folder):
             if file.endswith(".json"):
                 processor = Processor(sliding_window_frame_size=20,
-                                      stddev_threshold=0.05,
+                                      stddev_threshold=0.1,
                                       risk_iterations=5,
                                       minimum_training_size=900,
                                       starting_eval_size=5,
@@ -49,11 +49,15 @@ class GUIFlow:
                     {'Learner': AutoEncoderNNWeakLearner(cols_shape=24),
                      'Extractor': DataReaderExtractor(),
                      'Stream': DataReaderStream(data_folder='C:/Users/ofiri/Desktop/Tests/B/test'),
+                     'Sanitizer': None},
+                    {'Learner': AutoEncoderNNWeakLearner(cols_shape=6),
+                     'Extractor': DataReaderExtractor(),
+                     'Stream': DataReaderStream(data_folder='C:/Users/ofiri/Desktop/Tests/A/test'),
                      'Sanitizer': None}
                 ])
                 self.processes.append(processor)
 
-    def __init__(self, models_folder='./Models'):
+    def __init__(self, models_folder='./ModelsComb'):
         self.root = Tk()
         self.root.geometry("400x200")
 

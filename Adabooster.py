@@ -3,9 +3,9 @@ import json
 
 
 class Adabooster:
-    def __init__(self, training_set):
+    def __init__(self, training_set, weak_learners):
         self.training_set = training_set
-        self.weak_learners = []
+        self.weak_learners = weak_learners
         self.weak_alphas = []
         if training_set:
             self.training_size = len(self.training_set)
@@ -18,8 +18,8 @@ class Adabooster:
     def __update_weights(self, errors):
         e = (errors*self.weights).sum()
         alpha = 0.5 * np.log((1-e)/e)
-        w = np.zeros(int(len(self.training_set)*0.2))
-        for i in range(int(len(self.training_set)*0.2)):
+        w = np.zeros(self.validation_size)
+        for i in range(self.validation_size):
             w[i] = self.weights[i] * np.exp(alpha)
         self.weights = w / w.sum()
         self.weak_alphas.append(alpha)
@@ -31,8 +31,23 @@ class Adabooster:
             self.__update_weights(errors=mse)
         self.weak_learners.append(weak_learner)
 
-    def predict_data(self, test_data):
-        return self.weak_learners[0].predict(test_data)
+    def train(self):
+        for (index, learner) in enumerate(self.weak_learners):
+            training_dataset = [item[index].get_features() for item in self.training_set]
+            learner.reset()
+            (mse, predictions) = learner.train(training_dataset)
+            self.__update_weights(errors=mse)
+        print('Alphas = ' + str(self.weak_alphas))
+
+    def predict(self, test_data):
+        mses = []
+        predictions = []
+        for (index, learner) in enumerate(self.weak_learners):
+            (mse, pred) = learner.predict(test_data[index].get_features())
+            mses.append(mse)
+            predictions.append(pred)
+        final_mse = sum([mse[0] * self.weak_alphas[index] for (index, mse) in enumerate(mses)])
+        return final_mse, predictions
 
     def save_booster(self, folder_path, prefix):
         metadata = {'weights': self.weights.tolist(), 'alphas': self.weak_alphas,

@@ -41,16 +41,16 @@ class Processor:
                 break
         return training_set
 
-    def unite_features(self, dataset):
-        collective_features = []
-        collective_columns = []
-        collective_stamp = Stamp(user=dataset[0].get_header().get_user())
-        for item in dataset:
-            collective_features.extend(item.get_features().tolist())
-            collective_columns.extend(item.get_columns())
-            collective_stamp.set_source(collective_stamp.get_source() + "_" + item.get_header().get_source())
-            collective_stamp.set_time(min(collective_stamp.get_time(), item.get_header().get_time()))
-        return StampedFeatures(stamp=collective_stamp, data=np.array(collective_features), columns=collective_columns)
+    # def unite_features(self, dataset):
+    #     collective_features = []
+    #     collective_columns = []
+    #     collective_stamp = Stamp(user=dataset[0].get_header().get_user())
+    #     for item in dataset:
+    #         collective_features.extend(item.get_features().tolist())
+    #         collective_columns.extend(item.get_columns())
+    #         collective_stamp.set_source(collective_stamp.get_source() + "_" + item.get_header().get_source())
+    #         collective_stamp.set_time(min(collective_stamp.get_time(), item.get_header().get_time()))
+    #     return StampedFeatures(stamp=collective_stamp, data=np.array(collective_features), columns=collective_columns)
 
     def collect_next_dataset(self):
         # Build a dataset from all the weak learners data streams
@@ -71,29 +71,28 @@ class Processor:
                 current_data_set = stream['Sanitizer'].sanitize_data(current_data_set)
             features = stream['Extractor'].extract_features(current_data_set)
             dataset.append(features)
-        if len(dataset) == 0:
+        if len(dataset) != len(self.data_processors):
             return None
-        return self.unite_features(dataset)
+        return dataset
 
     def run_training_process(self):
         training_datasets = self.collect_training_dataset()
-        training_data = [item.get_features() for item in training_datasets]
-        self.strong_learner = Adabooster(training_set=training_data)
-        for processor in self.data_processors:
-            self.strong_learner.set_weak_learner(processor['Learner'])
+        self.strong_learner = Adabooster(training_set=training_datasets,
+                                         weak_learners=[processor['Learner'] for processor in self.data_processors])
+        self.strong_learner.train()
         if self.save_trained_model:
             self.save_processor(self.save_path)
 
     def remove_outliers(self, x, outlier_const):
         upper_quartile = np.percentile(x, 90)
         lower_quartile = np.percentile(x, 10)
-        IQR = (upper_quartile - lower_quartile) * outlier_const
-        quartileSet = (lower_quartile - IQR, upper_quartile + IQR)
-        resultList = []
+        iqr = (upper_quartile - lower_quartile) * outlier_const
+        quartile_set = (lower_quartile - iqr, upper_quartile + iqr)
+        result_list = []
         for y in x:
-            if y >= quartileSet[0] and y <= quartileSet[1]:
-                resultList.append(y)
-        return resultList
+            if y >= quartile_set[0] and y <= quartile_set[1]:
+                result_list.append(y)
+        return result_list
 
     def stop_processor(self):
         self.is_running = False
@@ -104,7 +103,6 @@ class Processor:
         if train:
             self.run_training_process()
         prediction_mse_window = []
-        prediction_times = []
         risk_count = 0
         current_risk = "No Risk"
         self.is_running = True
@@ -112,16 +110,15 @@ class Processor:
             data = self.collect_next_dataset()
             if not data:
                 break
-            (mse, pred) = self.strong_learner.predict_data(np.asmatrix(data.get_features()))
-            # print("PRED MSE = " + str(mse))
-            prediction_times.append(data.get_header().get_time())
+            (mse, pred) = self.strong_learner.predict(data)
+            print("PRED MSE = " + str(mse))
             # Evaluate a sliding window
-            prediction_mse_window.append(mse[0, 0])
+            prediction_mse_window.append(mse)
             if len(prediction_mse_window) == self.sliding_window_frame_size:
                 prediction_mse_window.pop(0)
             prediction_mse_window = self.remove_outliers(prediction_mse_window, 1.5)
             sliding_window_stdv = np.std(prediction_mse_window)
-            # print(str(sliding_window_stdv))
+            print(str(sliding_window_stdv))
             if len(prediction_mse_window) >= self.starting_eval_size and sliding_window_stdv > self.stddev_threshold:
                 risk_count = risk_count + 1
             else:
@@ -142,7 +139,7 @@ class Processor:
                 self.strong_learner.set_weak_learner(learner)
 
     def save_processor(self, folder_path):
-        processor_state = {'sliding_window_time_frame': self.sliding_window_time_frame,
+        processor_state = {'sliding_window_frame_size': self.sliding_window_frame_size,
                            'stddev_threshold': self.stddev_threshold,
                            'risk_iterations': self.risk_iterations,
                            'minimum_training_size': self.minimum_training_size,
@@ -158,7 +155,7 @@ class Processor:
     def load_processor(self, path, learners):
         with open(path, 'r') as f:
             processor_state = json.load(f)
-            self.sliding_window_time_frame = processor_state['sliding_window_time_frame']
+            self.sliding_window_frame_size = processor_state['sliding_window_frame_size']
             self.stddev_threshold = processor_state['stddev_threshold']
             self.risk_iterations = processor_state['risk_iterations']
             self.minimum_training_size = processor_state['minimum_training_size']
@@ -166,10 +163,8 @@ class Processor:
             self.save_trained_model = processor_state['save_trained_model']
             self.save_path = processor_state['save_path']
             self.user = processor_state['user']
-            self.strong_learner = Adabooster(None)
-            for learner in learners:
-                self.data_processors.append(learner)
-                self.strong_learner.set_weak_learner(learner['Learner'], train=False)
+            self.strong_learner = Adabooster(None, [learner['Learner'] for learner in learners])
+            self.data_processors = learners
             self.strong_learner.load_booster(processor_state['booster'])
 
     def get_user(self):
